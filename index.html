@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentry — Semáforo Inteligente</title>
+<style>
+  :root{
+    --bg:#f4f4f4;
+    --ink:#1a1a1a;
+    --muted:#6b6b6b;
+    --line:#dcdcdc;
+    --red:#d9463a;
+    --amber:#e0a530;
+    --green:#3a9c62;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:24px 20px 60px;}
+
+  header{padding:8px 0 24px;}
+  header p{font-size:13px;color:var(--muted);letter-spacing:0.03em;margin-bottom:6px;}
+  header h1{font-size:24px;}
+
+  .demo{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    margin-bottom:28px;
+  }
+  svg#map{display:block;width:100%;height:auto;background:#eee;}
+  .demo-foot{
+    display:flex;gap:10px;align-items:center;
+    padding:14px 16px;flex-wrap:wrap;
+  }
+  button.dispatch{
+    background:var(--red);color:#fff;border:none;
+    font-size:14px;font-weight:bold;
+    padding:11px 16px;border-radius:4px;cursor:pointer;
+  }
+  button.dispatch:disabled{background:#bbb;cursor:not-allowed;}
+  button.reset{
+    background:none;border:1px solid var(--line);color:var(--muted);
+    font-size:14px;padding:11px 14px;border-radius:4px;cursor:pointer;
+  }
+  .status{font-size:13px;color:var(--muted);margin-left:auto;}
+
+  section{padding:20px 0;border-top:1px solid var(--line);}
+  section h2{font-size:16px;margin-bottom:8px;}
+  section p{color:var(--muted);font-size:14.5px;}
+
+  ol.steps{list-style:none;counter-reset:step;margin-top:6px;}
+  ol.steps li{
+    counter-increment:step;
+    padding:8px 0;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+  ol.steps li::before{
+    content:counter(step) ". ";
+    color:var(--muted);
+  }
+
+  ul.team{
+    list-style:none;
+    display:flex;flex-wrap:wrap;gap:8px;
+    margin-top:8px;
+  }
+  ul.team li{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:7px 12px;
+    font-size:14px;
+  }
+
+  footer{padding-top:26px;color:#999;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p>SENTRY - SEGURANÇA PÚBLICA</p>
+    <h1>Semáforo inteligente com prioridade para viaturas de emergência</h1>
+  </header>
+
+  <div class="demo">
+    <svg id="map" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="400" fill="#eee"/>
+
+      <g id="buildings">
+        <rect x="14" y="18" width="90" height="110" fill="#c9c4b8"/>
+        <rect x="24" y="30" width="14" height="14" fill="#a8a294"/>
+        <rect x="48" y="30" width="14" height="14" fill="#a8a294"/>
+        <rect x="72" y="30" width="14" height="14" fill="#a8a294"/>
+        <rect x="24" y="54" width="14" height="14" fill="#a8a294"/>
+        <rect x="48" y="54" width="14" height="14" fill="#a8a294"/>
+        <rect x="72" y="54" width="14" height="14" fill="#a8a294"/>
+
+        <rect x="280" y="40" width="106" height="88" fill="#b9c2c4"/>
+        <rect x="294" y="52" width="16" height="16" fill="#98a4a6"/>
+        <rect x="320" y="52" width="16" height="16" fill="#98a4a6"/>
+        <rect x="346" y="52" width="16" height="16" fill="#98a4a6"/>
+        <rect x="294" y="78" width="16" height="16" fill="#98a4a6"/>
+        <rect x="320" y="78" width="16" height="16" fill="#98a4a6"/>
+        <rect x="346" y="78" width="16" height="16" fill="#98a4a6"/>
+
+        <rect x="20" y="272" width="112" height="118" fill="#c4c0b2"/>
+        <rect x="34" y="286" width="18" height="18" fill="#a39e8f"/>
+        <rect x="62" y="286" width="18" height="18" fill="#a39e8f"/>
+        <rect x="90" y="286" width="18" height="18" fill="#a39e8f"/>
+        <rect x="34" y="314" width="18" height="18" fill="#a39e8f"/>
+        <rect x="62" y="314" width="18" height="18" fill="#a39e8f"/>
+        <rect x="90" y="314" width="18" height="18" fill="#a39e8f"/>
+
+        <rect x="292" y="266" width="92" height="128" fill="#bdc4bb"/>
+        <rect x="304" y="280" width="14" height="14" fill="#9ca69c"/>
+        <rect x="326" y="280" width="14" height="14" fill="#9ca69c"/>
+        <rect x="348" y="280" width="14" height="14" fill="#9ca69c"/>
+        <rect x="304" y="302" width="14" height="14" fill="#9ca69c"/>
+        <rect x="326" y="302" width="14" height="14" fill="#9ca69c"/>
+        <rect x="348" y="302" width="14" height="14" fill="#9ca69c"/>
+      </g>
+
+      <rect x="0" y="160" width="400" height="80" fill="#d8d8d8"/>
+      <rect x="160" y="0" width="80" height="400" fill="#d8d8d8"/>
+      <g stroke="#bbb" stroke-width="2" stroke-dasharray="10 8">
+        <line x1="0" y1="200" x2="160" y2="200"/>
+        <line x1="240" y1="200" x2="400" y2="200"/>
+        <line x1="200" y1="0" x2="200" y2="160"/>
+        <line x1="200" y1="240" x2="200" y2="400"/>
+      </g>
+
+      <g id="regularCars"></g>
+
+      <g id="vehicle" transform="translate(228,400)" opacity="0">
+        <rect x="-10" y="-18" width="20" height="36" rx="3" fill="#1a1a1a"/>
+        <rect id="siren" x="-10" y="-5" width="20" height="9" fill="#3a7ce2"/>
+      </g>
+
+      <g id="lightSouth" transform="translate(206,250)">
+        <rect x="-9" y="0" width="18" height="42" rx="3" fill="#333"/>
+        <circle cx="0" cy="9" r="5.5" fill="#7a3a34" class="r"/>
+        <circle cx="0" cy="21" r="5.5" fill="#7a6a34" class="a"/>
+        <circle cx="0" cy="33" r="5.5" fill="#345a3a" class="g"/>
+      </g>
+      <g id="lightNorth" transform="translate(148,108)" opacity="0.3">
+        <rect x="-9" y="0" width="18" height="42" rx="3" fill="#333"/>
+        <circle cx="0" cy="9" r="5.5" fill="#7a3a34" class="r"/>
+        <circle cx="0" cy="21" r="5.5" fill="#7a6a34" class="a"/>
+        <circle cx="0" cy="33" r="5.5" fill="#345a3a" class="g"/>
+      </g>
+      <g id="lightWest" transform="translate(120,166) rotate(90)" opacity="0.3">
+        <rect x="-9" y="0" width="18" height="42" rx="3" fill="#333"/>
+        <circle cx="0" cy="9" r="5.5" fill="#7a3a34" class="r"/>
+        <circle cx="0" cy="21" r="5.5" fill="#7a6a34" class="a"/>
+        <circle cx="0" cy="33" r="5.5" fill="#345a3a" class="g"/>
+      </g>
+      <g id="lightEast" transform="translate(280,234) rotate(-90)" opacity="0.3">
+        <rect x="-9" y="0" width="18" height="42" rx="3" fill="#333"/>
+        <circle cx="0" cy="9" r="5.5" fill="#7a3a34" class="r"/>
+        <circle cx="0" cy="21" r="5.5" fill="#7a6a34" class="a"/>
+        <circle cx="0" cy="33" r="5.5" fill="#345a3a" class="g"/>
+      </g>
+    </svg>
+
+    <div class="demo-foot">
+      <button class="dispatch" id="dispatchBtn">Despachar viatura</button>
+      <button class="reset" id="resetBtn">Reiniciar</button>
+      <span class="status" id="statusText">aguardando</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>Como funciona</h2>
+    <ol class="steps">
+      <li>O veículo de emergência emite um sinal de posição</li>
+      <li>O sistema calcula qual cruzamento ele vai atravessar</li>
+      <li>O semáforo do trajeto abre verde antes da chegada</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>O que a Sentry fornece</h2>
+    <p>Instalação do controlador no semáforo, kit transmissor na frota, central de monitoramento para a prefeitura e treinamento da equipe operacional.</p>
+  </section>
+
+  <section>
+    <h2>Equipe</h2>
+    <ul class="team">
+      <li>Eric Ravini</li>
+      <li>Luiz Gustavo</li>
+      <li>Nicolas Nunes</li>
+      <li>Nicolas Baruki</li>
+      <li>Thales Kevin</li>
+      <li>Thiago</li>
+    </ul>
+  </section>
+
+  <footer>Protótipo demonstrativo pro trabalho escolar de logística.</footer>
+</div>
+
+<script>
+const btn = document.getElementById('dispatchBtn');
+const resetBtn = document.getElementById('resetBtn');
+const vehicle = document.getElementById('vehicle');
+const siren = document.getElementById('siren');
+const statusText = document.getElementById('statusText');
+const lightSouth = document.getElementById('lightSouth');
+const lightNorth = document.getElementById('lightNorth');
+const lightWest = document.getElementById('lightWest');
+const lightEast = document.getElementById('lightEast');
+const regularCarsLayer = document.getElementById('regularCars');
+
+const lightEls = { north: lightNorth, south: lightSouth, east: lightEast, west: lightWest };
+let lightState = { north: 'red', south: 'red', east: 'red', west: 'red' };
+let southActivated = false;
+let cycleActive = true;
+let phase = 'ns';
+
+function setLight(key, color){
+  const group = lightEls[key];
+  group.querySelector('.r').setAttribute('fill', color === 'red' ? '#d9463a' : '#7a3a34');
+  group.querySelector('.a').setAttribute('fill', color === 'amber' ? '#e0a530' : '#7a6a34');
+  group.querySelector('.g').setAttribute('fill', color === 'green' ? '#3a9c62' : '#345a3a');
+  lightState[key] = color;
+}
+
+function applyCyclePhase(){
+  if(phase === 'ns'){
+    setLight('north', 'green');
+    setLight('south', southActivated ? 'green' : 'red');
+    setLight('east', 'red');
+    setLight('west', 'red');
+  } else {
+    setLight('north', 'red');
+    setLight('south', 'red');
+    setLight('east', 'green');
+    setLight('west', 'green');
+  }
+}
+
+function runNormalCycle(){
+  if(!cycleActive) return;
+  phase = phase === 'ns' ? 'ew' : 'ns';
+  applyCyclePhase();
+}
+setInterval(runNormalCycle, 4500);
+
+setInterval(() => {
+  siren.setAttribute('fill', siren.getAttribute('fill') === '#3a7ce2' ? '#d9463a' : '#3a7ce2');
+}, 280);
+
+const cars = [];
+
+function spawnCar(){
+  const kinds = [
+    { key: 'down', axis: 'y', sign: 1, start: -20, stop: 150, fixed: 180, lightKey: 'north', w: 12, h: 18 },
+    { key: 'right', axis: 'x', sign: 1, start: -20, stop: 150, fixed: 180, lightKey: 'west', w: 18, h: 12 },
+    { key: 'left', axis: 'x', sign: -1, start: 420, stop: 250, fixed: 220, lightKey: 'east', w: 18, h: 12 }
+  ];
+  const kind = kinds[Math.floor(Math.random() * kinds.length)];
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  el.setAttribute('width', kind.w);
+  el.setAttribute('height', kind.h);
+  el.setAttribute('rx', 2);
+  el.setAttribute('fill', ['#7a8288', '#8a7a6a', '#6a7a8a'][Math.floor(Math.random() * 3)]);
+  regularCarsLayer.appendChild(el);
+
+  cars.push({ el, ...kind, pos: kind.start, speed: 55 });
+}
+
+function updateCars(dt){
+  for(let i = cars.length - 1; i >= 0; i--){
+    const car = cars[i];
+    const lightColor = lightState[car.lightKey];
+    const approaching = car.sign > 0 ? car.pos < car.stop : car.pos > car.stop;
+    const distance = Math.abs(car.stop - car.pos);
+    const blocked = lightColor !== 'green' && approaching && distance < 40;
+
+    if(!blocked){
+      car.pos += car.speed * car.sign * dt;
+    }
+
+    if(car.axis === 'y'){
+      car.el.setAttribute('x', car.fixed);
+      car.el.setAttribute('y', car.pos);
+    } else {
+      car.el.setAttribute('x', car.pos);
+      car.el.setAttribute('y', car.fixed);
+    }
+
+    if(car.pos > 420 || car.pos < -30){
+      car.el.remove();
+      cars.splice(i, 1);
+    }
+  }
+}
+
+let lastFrame = performance.now();
+function trafficLoop(now){
+  const dt = (now - lastFrame) / 1000;
+  lastFrame = now;
+  updateCars(dt);
+  requestAnimationFrame(trafficLoop);
+}
+requestAnimationFrame(trafficLoop);
+
+function scheduleSpawn(){
+  const delay = 2200 + Math.random() * 2200;
+  setTimeout(() => {
+    spawnCar();
+    scheduleSpawn();
+  }, delay);
+}
+scheduleSpawn();
+
+function resetAll(){
+  vehicle.setAttribute('transform', 'translate(228,400)');
+  vehicle.setAttribute('opacity', '0');
+  cycleActive = true;
+  phase = 'ns';
+  applyCyclePhase();
+  statusText.textContent = 'aguardando';
+  btn.disabled = false;
+}
+
+btn.addEventListener('click', () => {
+  btn.disabled = true;
+  cycleActive = false;
+  statusText.textContent = 'viatura a caminho';
+  vehicle.setAttribute('opacity', '1');
+  setLight('north', 'red');
+  setLight('south', 'red');
+  setLight('east', 'red');
+  setLight('west', 'red');
+
+  const startY = 400, endY = -30, duration = 2400, start = performance.now();
+  let opened = false;
+
+  function frame(now){
+    const t = Math.min((now - start) / duration, 1);
+    const y = startY + (endY - startY) * t;
+    vehicle.setAttribute('transform', `translate(228,${y})`);
+
+    if(!opened && t > 0.12){
+      opened = true;
+      setLight('south', 'green');
+      statusText.textContent = 'sinal liberado';
+    }
+
+    if(t < 1){
+      requestAnimationFrame(frame);
+    } else {
+      setTimeout(() => {
+        setLight('south', 'red');
+        vehicle.setAttribute('opacity', '0');
+        statusText.textContent = 'concluído';
+        btn.disabled = false;
+        southActivated = true;
+        cycleActive = true;
+        applyCyclePhase();
+      }, 500);
+    }
+  }
+  requestAnimationFrame(frame);
+});
+
+resetBtn.addEventListener('click', resetAll);
+resetAll();
+</script>
+</body>
+</html>
